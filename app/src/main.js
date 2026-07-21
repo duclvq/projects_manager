@@ -5,6 +5,7 @@ const { getCurrentWindow } = window.__TAURI__.window;
 const grid = document.getElementById('grid');
 const search = document.getElementById('search');
 const pin = document.getElementById('pin');
+const usageEl = document.getElementById('usage');
 
 let projects = [];
 let filter = '';
@@ -27,6 +28,67 @@ function relTime(iso) {
 
 function esc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function fmtTokens(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return String(n || 0);
+}
+
+function fmtCost(c) {
+  return '$' + (c || 0).toFixed(2);
+}
+
+function windowLabel(mins) {
+  if (mins >= 10080) return 'weekly';
+  if (mins >= 1440) return `${Math.round(mins / 1440)}d`;
+  if (mins >= 60) return `${Math.round(mins / 60)}h`;
+  return `${mins}m`;
+}
+
+function fmtReset(unixSecs) {
+  if (!unixSecs) return '';
+  const d = new Date(unixSecs * 1000);
+  const now = new Date();
+  const opts =
+    d.toDateString() === now.toDateString()
+      ? { hour: 'numeric', minute: '2-digit' }
+      : { month: 'short', day: 'numeric' };
+  return d.toLocaleString([], opts);
+}
+
+function renderUsage(u) {
+  if (!u) return;
+  const rows = [];
+
+  if (u.codex) {
+    const remain = Math.max(0, Math.min(100, 100 - u.codex.used_percent));
+    const plan = u.codex.plan_type ? `<span class="u-plan">${esc(u.codex.plan_type)}</span>` : '';
+    rows.push(`
+      <div class="u-row">
+        <div class="u-key">CODEX ${plan}</div>
+        <div class="gauge"><div class="gauge-fill" style="width:${remain.toFixed(0)}%"></div></div>
+        <div class="u-read"><b>${remain.toFixed(0)}%</b> left
+          <span class="u-meta">${windowLabel(u.codex.window_minutes)} · resets ${fmtReset(u.codex.resets_at)}</span>
+        </div>
+      </div>`);
+  }
+
+  const c = u.claude || {};
+  const cRemain = Math.max(0, Math.min(100, c.remaining_percent || 0));
+  rows.push(`
+    <div class="u-row">
+      <div class="u-key">CLAUDE <span class="u-plan muted">est</span></div>
+      <div class="gauge"><div class="gauge-fill" style="width:${cRemain.toFixed(0)}%"></div></div>
+      <div class="u-read"><b>${cRemain.toFixed(0)}%</b> left
+        <span class="u-meta">wk ${fmtTokens(c.week_billable)} billable · ${fmtCost(c.week_cost)}</span>
+      </div>
+    </div>`);
+
+  usageEl.innerHTML = rows.join('');
+  usageEl.hidden = false;
 }
 
 function agentIcons(sessions) {
@@ -124,7 +186,7 @@ search.addEventListener('input', () => {
 pin.addEventListener('click', async () => {
   pinned = !pinned;
   await getCurrentWindow().setAlwaysOnTop(pinned);
-  pin.style.opacity = pinned ? '1' : '0.4';
+  pin.classList.toggle('off', !pinned);
 });
 
 listen('snapshot', (e) => {
@@ -132,7 +194,11 @@ listen('snapshot', (e) => {
   render();
 });
 
+listen('usage', (e) => renderUsage(e.payload));
+
 invoke('get_snapshot').then((p) => {
   projects = p;
   render();
 });
+
+invoke('get_usage').then(renderUsage);

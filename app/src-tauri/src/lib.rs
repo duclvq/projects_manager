@@ -9,10 +9,16 @@ mod parser_codex;
 mod procs;
 mod snapshot;
 mod status;
+mod usage;
 
 #[tauri::command]
 fn get_snapshot() -> Vec<model::Project> {
     snapshot::build()
+}
+
+#[tauri::command]
+fn get_usage() -> usage::Usage {
+    usage::build()
 }
 
 #[tauri::command]
@@ -43,6 +49,7 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
+            get_usage,
             resume_session,
             open_folder
         ])
@@ -52,6 +59,13 @@ pub fn run() {
                 let projects = snapshot::build();
                 let _ = handle.emit("snapshot", projects);
                 std::thread::sleep(std::time::Duration::from_secs(2));
+            });
+            // Usage is heavier to compute and changes slowly — refresh on its own,
+            // slower cadence.
+            let uhandle = app.handle().clone();
+            std::thread::spawn(move || loop {
+                let _ = uhandle.emit("usage", usage::build());
+                std::thread::sleep(std::time::Duration::from_secs(15));
             });
             Ok(())
         })

@@ -10,9 +10,11 @@
 
   <body>
     <header id="bar">
+      <span id="mark">◆</span>
       <input id="search" type="search" placeholder="Filter projects…" />
-      <button id="pin" title="Toggle always on top">📌</button>
+      <button id="pin" title="Keep window on top">on&nbsp;top</button>
     </header>
+    <section id="usage" hidden></section>
     <main id="grid"></main>
     <!-- Dynamic import with a timestamp busts the webview's aggressive cache so
          the latest main.js always loads (WKWebView caches the custom protocol). -->
