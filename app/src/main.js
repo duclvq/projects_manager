@@ -49,7 +49,7 @@ function launchResume(p) {
     sessionId: top.id,
     // If this session is already running, open a fresh one instead of colliding.
     fresh: isLive(top),
-    terminal: 'iterm',
+    terminal: 'terminal',
   });
 }
 
