@@ -3,6 +3,7 @@ mod io_util;
 mod model;
 mod parser_claude;
 mod parser_codex;
+mod procs;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
