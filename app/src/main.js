@@ -9,7 +9,7 @@ const usageEl = document.getElementById('usage');
 
 let projects = [];
 let filter = '';
-let pinned = true;
+let pinned = false;
 
 const STATUS_LABEL = {
   needs_you: 'Needs you',
@@ -37,10 +37,6 @@ function fmtTokens(n) {
   return String(n || 0);
 }
 
-function fmtCost(c) {
-  return '$' + (c || 0).toFixed(2);
-}
-
 function windowLabel(mins) {
   if (mins >= 10080) return 'weekly';
   if (mins >= 1440) return `${Math.round(mins / 1440)}d`;
@@ -64,28 +60,72 @@ function renderUsage(u) {
   const rows = [];
 
   if (u.codex) {
-    const remain = Math.max(0, Math.min(100, 100 - u.codex.used_percent));
     const plan = u.codex.plan_type ? `<span class="u-plan">${esc(u.codex.plan_type)}</span>` : '';
+    const windows = [u.codex.primary, u.codex.secondary]
+      .filter(Boolean)
+      .sort((a, b) => a.window_minutes - b.window_minutes);
+    const limits = [];
+    let codexLabelShown = false;
+    const codexLabel = () => {
+      if (codexLabelShown) return '';
+      codexLabelShown = true;
+      return `CODEX ${plan}`;
+    };
+
+    if (u.codex.context_remaining_percent != null) {
+      const remain = Math.max(0, Math.min(100, u.codex.context_remaining_percent));
+      limits.push(`
+        <div class="u-limit">
+          <div class="u-key">${codexLabel()}</div>
+          <div class="gauge"><div class="gauge-fill" style="width:${remain.toFixed(0)}%"></div></div>
+          <div class="u-read"><b>${remain.toFixed(0)}%</b> left
+            <span class="u-meta">context · ${fmtTokens(u.codex.context_used_tokens)} / ${fmtTokens(u.codex.context_window_tokens)}</span>
+          </div>
+        </div>`);
+    }
+
+    for (const w of windows) {
+      const remain = Math.max(0, Math.min(100, 100 - w.used_percent));
+      limits.push(`
+        <div class="u-limit">
+          <div class="u-key">${codexLabel()}</div>
+          <div class="gauge"><div class="gauge-fill" style="width:${remain.toFixed(0)}%"></div></div>
+          <div class="u-read"><b>${remain.toFixed(0)}%</b> left
+            <span class="u-meta">${windowLabel(w.window_minutes)} · resets ${fmtReset(w.resets_at)}</span>
+          </div>
+        </div>`);
+    }
     rows.push(`
-      <div class="u-row">
-        <div class="u-key">CODEX ${plan}</div>
-        <div class="gauge"><div class="gauge-fill" style="width:${remain.toFixed(0)}%"></div></div>
-        <div class="u-read"><b>${remain.toFixed(0)}%</b> left
-          <span class="u-meta">${windowLabel(u.codex.window_minutes)} · resets ${fmtReset(u.codex.resets_at)}</span>
-        </div>
-      </div>`);
+      <div class="u-row u-group">${limits.join('')}</div>`);
   }
 
-  const c = u.claude || {};
-  const cRemain = Math.max(0, Math.min(100, c.remaining_percent || 0));
-  rows.push(`
-    <div class="u-row">
-      <div class="u-key">CLAUDE <span class="u-plan muted">est</span></div>
-      <div class="gauge"><div class="gauge-fill" style="width:${cRemain.toFixed(0)}%"></div></div>
-      <div class="u-read"><b>${cRemain.toFixed(0)}%</b> left
-        <span class="u-meta">wk ${fmtTokens(c.week_billable)} billable · ${fmtCost(c.week_cost)}</span>
-      </div>
-    </div>`);
+  if (u.claude) {
+    const c = u.claude;
+    const limits = [
+      ['session', c.session],
+      ['weekly', c.weekly],
+    ];
+    rows.push(`
+      <div class="u-row u-group">${limits.map(([label, limit], i) => {
+        const remain = Math.max(0, Math.min(100, 100 - limit.used_percent));
+        const badge = c.stale ? 'stale' : 'live';
+        return `
+          <div class="u-limit">
+            <div class="u-key">${i === 0 ? `CLAUDE <span class="u-plan muted">${badge}</span>` : ''}</div>
+            <div class="gauge"><div class="gauge-fill" style="width:${remain.toFixed(0)}%"></div></div>
+            <div class="u-read"><b>${remain.toFixed(0)}%</b> left
+              <span class="u-meta">${label} · resets ${esc(limit.reset_label)}</span>
+            </div>
+          </div>`;
+      }).join('')}</div>`);
+  } else {
+    rows.push(`
+      <div class="u-row">
+        <div class="u-key">CLAUDE</div>
+        <div class="gauge"></div>
+        <div class="u-read"><b>—</b><span class="u-meta">usage unavailable</span></div>
+      </div>`);
+  }
 
   usageEl.innerHTML = rows.join('');
   usageEl.hidden = false;
@@ -186,6 +226,11 @@ search.addEventListener('input', () => {
 pin.addEventListener('click', async () => {
   pinned = !pinned;
   await getCurrentWindow().setAlwaysOnTop(pinned);
+  pin.classList.toggle('off', !pinned);
+});
+
+getCurrentWindow().isAlwaysOnTop().then((value) => {
+  pinned = value;
   pin.classList.toggle('off', !pinned);
 });
 

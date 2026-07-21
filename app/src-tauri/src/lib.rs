@@ -61,11 +61,11 @@ pub fn run() {
                 std::thread::sleep(std::time::Duration::from_secs(2));
             });
             // Usage is heavier to compute and changes slowly — refresh on its own,
-            // slower cadence.
+            // one-minute cadence. The frontend requests the initial snapshot.
             let uhandle = app.handle().clone();
             std::thread::spawn(move || loop {
+                std::thread::sleep(std::time::Duration::from_secs(60));
                 let _ = uhandle.emit("usage", usage::build());
-                std::thread::sleep(std::time::Duration::from_secs(15));
             });
             Ok(())
         })
