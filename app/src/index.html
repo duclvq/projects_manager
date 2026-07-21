@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projects</title>
+  </head>
+
+  <body>
+    <header id="bar">
+      <span id="mark">◆</span>
+      <input id="search" type="search" placeholder="Filter projects…" />
+      <button id="pin" class="off" title="Keep window on top">on&nbsp;top</button>
+    </header>
+    <section id="usage" hidden></section>
+    <main id="grid"></main>
+    <!-- Dynamic import with a timestamp busts the webview's aggressive cache so
+         the latest main.js always loads (WKWebView caches the custom protocol). -->
+    <script type="module">
+      import(`/main.js?t=${Date.now()}`);
+    </script>
+  </body>
+</html>
