@@ -1,5 +1,6 @@
 mod model;
 mod parser_claude;
+mod parser_codex;
 mod io_util {
     use std::path::Path;
     pub fn read_head_tail(_p: &Path, _n: usize) -> Option<String> {
