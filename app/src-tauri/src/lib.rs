@@ -1,4 +1,4 @@
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 
 mod discovery;
 mod io_util;
@@ -9,12 +9,6 @@ mod parser_codex;
 mod procs;
 mod snapshot;
 mod status;
-
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
 
 #[tauri::command]
 fn get_snapshot() -> Vec<model::Project> {
@@ -48,7 +42,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
-            greet,
             get_snapshot,
             resume_session,
             open_folder

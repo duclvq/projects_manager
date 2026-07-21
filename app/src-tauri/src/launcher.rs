@@ -19,9 +19,9 @@ pub fn shell_quote(s: &str) -> String {
 pub fn build_resume_command(agent: Agent, session_id: &str, fresh: bool) -> String {
     match (agent, fresh) {
         (Agent::Claude, true) => "claude".to_string(),
-        (Agent::Claude, false) => format!("claude --resume {session_id}"),
+        (Agent::Claude, false) => format!("claude --resume {}", shell_quote(session_id)),
         (Agent::Codex, true) => "codex".to_string(),
-        (Agent::Codex, false) => format!("codex resume {session_id}"),
+        (Agent::Codex, false) => format!("codex resume {}", shell_quote(session_id)),
     }
 }
 
@@ -68,16 +68,16 @@ mod tests {
 
     #[test]
     fn resume_commands_per_agent() {
-        assert_eq!(build_resume_command(Agent::Claude, "abc", false), "claude --resume abc");
+        assert_eq!(build_resume_command(Agent::Claude, "abc", false), "claude --resume 'abc'");
         assert_eq!(build_resume_command(Agent::Claude, "abc", true), "claude");
-        assert_eq!(build_resume_command(Agent::Codex, "xyz", false), "codex resume xyz");
+        assert_eq!(build_resume_command(Agent::Codex, "xyz", false), "codex resume 'xyz'");
         assert_eq!(build_resume_command(Agent::Codex, "xyz", true), "codex");
     }
 
     #[test]
     fn shell_line_quotes_cwd_with_spaces() {
         let line = build_shell_line("/Volumes/My Disk/proj", Agent::Claude, "id1", false);
-        assert_eq!(line, "cd '/Volumes/My Disk/proj' && claude --resume id1");
+        assert_eq!(line, "cd '/Volumes/My Disk/proj' && claude --resume 'id1'");
     }
 
     #[test]

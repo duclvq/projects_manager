@@ -25,6 +25,10 @@ function relTime(iso) {
   return `${Math.floor(secs / 86400)}d ago`;
 }
 
+function esc(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function agentIcons(sessions) {
   const set = new Set(sessions.map((s) => s.agent));
   return [...set].map((a) => (a === 'claude' ? 'C' : 'X')).join(' ');
@@ -43,7 +47,7 @@ function render() {
     tile.disabled = p.status === 'offline';
     tile.innerHTML = `
       <div class="tile-head">
-        <span class="name">${p.name}</span>
+        <span class="name">${esc(p.name)}</span>
         <span class="agents">${agentIcons(p.sessions)}</span>
       </div>
       <div class="status-row">
@@ -51,7 +55,7 @@ function render() {
         <span class="status">${STATUS_LABEL[p.status]}</span>
         <span class="time">${relTime(p.last_activity)}</span>
       </div>
-      <div class="title">${(top.title || '').replace(/</g, '&lt;')}</div>
+      <div class="title">${esc(top.title)}</div>
       <div class="actions">
         <span class="resume">Resume ▸</span>
         <span class="folder" title="Open folder">📁</span>
