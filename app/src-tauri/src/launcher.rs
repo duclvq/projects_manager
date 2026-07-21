@@ -26,8 +26,11 @@ pub fn build_resume_command(agent: Agent, session_id: &str, fresh: bool) -> Stri
 }
 
 pub fn build_shell_line(cwd: &str, agent: Agent, session_id: &str, fresh: bool) -> String {
+    // Trailing `; exec $SHELL -l` keeps the terminal window alive after the agent
+    // exits — otherwise terminals configured to "close session on end" (the iTerm2
+    // default) vanish the instant the agent quits or a resume fails.
     format!(
-        "cd {} && {}",
+        "cd {} && {} ; exec $SHELL -l",
         shell_quote(cwd),
         build_resume_command(agent, session_id, fresh)
     )
@@ -77,7 +80,10 @@ mod tests {
     #[test]
     fn shell_line_quotes_cwd_with_spaces() {
         let line = build_shell_line("/Volumes/My Disk/proj", Agent::Claude, "id1", false);
-        assert_eq!(line, "cd '/Volumes/My Disk/proj' && claude --resume 'id1'");
+        assert_eq!(
+            line,
+            "cd '/Volumes/My Disk/proj' && claude --resume 'id1' ; exec $SHELL -l"
+        );
     }
 
     #[test]
