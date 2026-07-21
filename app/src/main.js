@@ -53,6 +53,20 @@ function launchResume(p) {
   });
 }
 
+// Open a specific agent in this project: resume that agent's newest session if
+// it exists and isn't already running, otherwise start a fresh one in the folder.
+function openIn(p, agentName) {
+  if (p.status === 'offline') return;
+  const s = (p.sessions || []).find((x) => x.agent === agentName);
+  invoke('resume_session', {
+    cwd: p.path,
+    agent: agentName,
+    sessionId: s ? s.id : '',
+    fresh: !s || isLive(s),
+    terminal: 'terminal',
+  });
+}
+
 function render() {
   const q = filter.trim().toLowerCase();
   grid.innerHTML = '';
@@ -77,6 +91,9 @@ function render() {
       <div class="title">${esc(top.title)}</div>
       <div class="actions">
         <span class="resume">${isLive(top) ? 'New ▸' : 'Resume ▸'}</span>
+        <span class="spacer"></span>
+        <button class="agent-btn claude" data-agent="claude" title="Open in Claude">Claude</button>
+        <button class="agent-btn codex" data-agent="codex" title="Open in Codex">Codex</button>
         <span class="folder" title="Open folder">📁</span>
       </div>`;
 
@@ -84,6 +101,12 @@ function render() {
       e.stopPropagation();
       launchResume(p);
     };
+    tile.querySelectorAll('.agent-btn').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        openIn(p, btn.dataset.agent);
+      };
+    });
     tile.querySelector('.folder').onclick = (e) => {
       e.stopPropagation();
       invoke('open_folder', { path: p.path });

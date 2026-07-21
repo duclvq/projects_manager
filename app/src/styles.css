@@ -70,7 +70,21 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.actions { display: flex; justify-content: space-between; margin-top: 2px; }
-.resume { color: var(--resumable); }
+.actions { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.actions .spacer { flex: 1; }
+.resume { color: var(--resumable); cursor: pointer; }
+.agent-btn {
+  font: inherit;
+  font-size: 11px;
+  border: 1px solid #3a3d47;
+  background: transparent;
+  color: var(--text);
+  border-radius: 6px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.agent-btn:hover { background: #2c2f38; }
+.agent-btn.claude:hover { border-color: var(--needs); color: var(--needs); }
+.agent-btn.codex:hover { border-color: var(--working); color: var(--working); }
 .folder { cursor: pointer; }
 .tile.offline { opacity: 0.5; cursor: default; }
