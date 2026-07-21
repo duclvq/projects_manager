@@ -1,17 +1,18 @@
 use crate::discovery::{build_projects, collect_sessions, default_sources};
 use crate::model::Project;
-use crate::procs::live_agent_cwds;
+use crate::procs::live_agent_count;
 use crate::status;
 use chrono::{Duration, Utc};
 
 pub fn build() -> Vec<Project> {
+    let now = Utc::now();
     let sources = default_sources();
-    let since = Utc::now() - Duration::days(30);
+    let since = now - Duration::days(30);
     let mut sessions = collect_sessions(&sources, since);
 
-    let live = live_agent_cwds();
+    let live_count = live_agent_count();
     for s in &mut sessions {
-        status::apply(s, &live);
+        status::apply(s, live_count, now);
     }
 
     // Recompute each project's aggregate status now that sessions are classified.

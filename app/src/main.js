@@ -34,6 +34,25 @@ function agentIcons(sessions) {
   return [...set].map((a) => (a === 'claude' ? 'C' : 'X')).join(' ');
 }
 
+// A session with a live agent process (working / needs_you) is already open in
+// a terminal — resuming its exact id conflicts and the agent exits immediately.
+function isLive(session) {
+  return session && (session.status === 'working' || session.status === 'needs_you');
+}
+
+function launchResume(p) {
+  const top = p.sessions && p.sessions[0];
+  if (!top || !top.id || p.status === 'offline') return;
+  invoke('resume_session', {
+    cwd: p.path,
+    agent: top.agent,
+    sessionId: top.id,
+    // If this session is already running, open a fresh one instead of colliding.
+    fresh: isLive(top),
+    terminal: 'iterm',
+  });
+}
+
 function render() {
   const q = filter.trim().toLowerCase();
   grid.innerHTML = '';
@@ -57,37 +76,19 @@ function render() {
       </div>
       <div class="title">${esc(top.title)}</div>
       <div class="actions">
-        <span class="resume">Resume ▸</span>
+        <span class="resume">${isLive(top) ? 'New ▸' : 'Resume ▸'}</span>
         <span class="folder" title="Open folder">📁</span>
       </div>`;
 
     tile.querySelector('.resume').onclick = (e) => {
       e.stopPropagation();
-      if (top.id) {
-        invoke('resume_session', {
-          cwd: p.path,
-          agent: top.agent,
-          sessionId: top.id,
-          fresh: false,
-          terminal: 'iterm',
-        });
-      }
+      launchResume(p);
     };
     tile.querySelector('.folder').onclick = (e) => {
       e.stopPropagation();
       invoke('open_folder', { path: p.path });
     };
-    tile.onclick = () => {
-      if (top.id) {
-        invoke('resume_session', {
-          cwd: p.path,
-          agent: top.agent,
-          sessionId: top.id,
-          fresh: false,
-          terminal: 'iterm',
-        });
-      }
-    };
+    tile.onclick = () => launchResume(p);
     grid.appendChild(tile);
   }
 }
