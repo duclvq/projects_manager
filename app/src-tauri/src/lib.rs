@@ -1,4 +1,11 @@
 mod model;
+mod parser_claude;
+mod io_util {
+    use std::path::Path;
+    pub fn read_head_tail(_p: &Path, _n: usize) -> Option<String> {
+        None
+    }
+}
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
