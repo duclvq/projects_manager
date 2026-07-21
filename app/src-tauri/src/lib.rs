@@ -1,3 +1,5 @@
+use tauri::{Emitter, Manager};
+
 mod discovery;
 mod io_util;
 mod launcher;
@@ -51,6 +53,15 @@ pub fn run() {
             resume_session,
             open_folder
         ])
+        .setup(|app| {
+            let handle = app.handle().clone();
+            std::thread::spawn(move || loop {
+                let projects = snapshot::build();
+                let _ = handle.emit("snapshot", projects);
+                std::thread::sleep(std::time::Duration::from_secs(2));
+            });
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
